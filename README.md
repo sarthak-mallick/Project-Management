@@ -1,7 +1,5 @@
 # Project Management Application
 
-A full-stack JIRA-inspired project management application built with Java Spring Boot, Hibernate, MySQL, and JSP.
-
 ## 🚀 Features
 
 - **User Authentication**: Secure login and registration system.
