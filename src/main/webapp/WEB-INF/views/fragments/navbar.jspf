@@ -1,0 +1,9 @@
+<nav class="navbar navbar-pm shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/all-projects">&#9889; Project Manager</a>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/all-projects" class="btn btn-sm btn-outline-light">Projects</a>
+            <a href="/logout" class="btn btn-sm btn-light">Logout</a>
+        </div>
+    </div>
+</nav>
