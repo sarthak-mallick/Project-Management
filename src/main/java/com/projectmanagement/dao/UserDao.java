@@ -5,8 +5,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.query.Query;
 import org.springframework.stereotype.Repository;
 
-import com.projectmanagement.models.Project;
 import com.projectmanagement.models.User;
+import com.projectmanagement.util.PasswordUtil;
 
 @Repository
 public class UserDao extends Dao<User> {
@@ -20,14 +20,9 @@ public class UserDao extends Dao<User> {
     }
     
     public int authenticate(User user) {
-    	String email = user.getEmail();
-    	String password = user.getPassword();
-        Query<User> q = getSession().createQuery("from User where email= :email and password= :password", User.class);
-        q.setParameter("email", email);
-        q.setParameter("password", password);
-        if (q.uniqueResult() != null) {
-        	User u = (User) q.uniqueResult();
-        	return u.getId();
+        User u = getUserByEmail(user.getEmail());
+        if (u != null && PasswordUtil.matches(user.getPassword(), u.getPassword())) {
+            return u.getId();
         }
         return -1;
     }
