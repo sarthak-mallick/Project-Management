@@ -185,6 +185,35 @@ longer binds a task form object) and three unused `userId` locals.
 
 ---
 
+## 10. Editing a stale task 500'd; PRG / navigation audit
+
+**Severity:** Medium
+
+**File:** `src/main/java/com/projectmanagement/controllers/TaskController.java`
+
+**Problem:** `editTaskForm` dereferenced `getTaskById(task.getId())` before its
+`try` block with no null check. Submitting a stale edit form — the task was
+deleted in the meantime, a browser back/forward replayed the POST, or the id was
+tampered — produced an uncaught NullPointerException (HTTP 500).
+
+**Fix:** Guard for a missing task or project and fall back to
+`redirect:/all-projects` so navigation never breaks.
+
+**Audit context:** This came out of a review of the Post-Redirect-Get pattern
+and refresh/back/forward behavior. Findings:
+
+- Every state-changing POST already redirects on success (`/new-user`,
+  `/login`, `/new-project`, `/new-task`, `/edit-task`), so refreshing or
+  navigating onto a result page re-runs an idempotent GET. PRG is correct.
+- Validation errors intentionally forward (return the view) rather than
+  redirect, so refreshing a page that just showed field errors prompts the
+  browser's "resubmit form?" dialog. Conventional trade-off; left as-is.
+- Deletes use GET links but are safe to replay: `delete-project` is protected
+  by its null guard and `delete-task` by its try/catch, so a back-button replay
+  is a no-op redirect rather than a duplicate delete or a 500.
+
+---
+
 ## Verification status
 
 The fixes were validated through the IDE language server (no compile errors; the
