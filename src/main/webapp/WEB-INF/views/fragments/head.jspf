@@ -1,0 +1,59 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>${pageTitle} &middot; Project Manager</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --pm-primary: #4f46e5;
+        --pm-primary-dark: #4338ca;
+        --pm-bg: #f4f5fb;
+        --pm-text: #1f2937;
+        --pm-muted: #6b7280;
+    }
+    body {
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        background: var(--pm-bg);
+        color: var(--pm-text);
+    }
+    a { color: var(--pm-primary); text-decoration: none; }
+    a:hover { color: var(--pm-primary-dark); text-decoration: underline; }
+    .navbar-pm { background: linear-gradient(90deg, var(--pm-primary), var(--pm-primary-dark)); }
+    .navbar-pm .navbar-brand { color: #fff; font-weight: 700; letter-spacing: .2px; }
+    .navbar-pm .navbar-brand:hover { color: #fff; text-decoration: none; }
+    .page-title { font-weight: 700; }
+    .card { border: none; border-radius: 1rem; box-shadow: 0 10px 30px rgba(17, 24, 39, .07); }
+    .auth-wrapper { min-height: 100vh; display: flex; align-items: center; }
+    .btn-primary { background: var(--pm-primary); border-color: var(--pm-primary); }
+    .btn-primary:hover, .btn-primary:focus { background: var(--pm-primary-dark); border-color: var(--pm-primary-dark); }
+    .btn-brand-soft { background: rgba(79, 70, 229, .1); color: var(--pm-primary); border: none; }
+    .btn-brand-soft:hover { background: rgba(79, 70, 229, .18); color: var(--pm-primary-dark); }
+    .form-label { font-weight: 500; }
+    .table thead th {
+        text-transform: uppercase;
+        font-size: .72rem;
+        letter-spacing: .05em;
+        color: var(--pm-muted);
+        font-weight: 600;
+        border-bottom-width: 1px;
+    }
+    .table td { vertical-align: middle; }
+    .empty-state { color: var(--pm-muted); padding: 3rem 1rem; text-align: center; }
+    .progress { height: 1.1rem; background: #eceef6; border-radius: .5rem; }
+    .progress-bar { background: var(--pm-primary); font-size: .72rem; }
+    .badge-restricted { background: #e5e7eb; color: #6b7280; }
+    .pm-toast {
+        position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1080;
+        min-width: 240px; max-width: 360px;
+        background: #111827; color: #fff;
+        padding: .75rem 1rem; border-radius: .6rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+        opacity: 0; transform: translateY(12px);
+        transition: opacity .25s ease, transform .25s ease;
+        pointer-events: none;
+    }
+    .pm-toast.show { opacity: 1; transform: translateY(0); }
+    .pm-toast.error { background: #b91c1c; }
+</style>

@@ -1,31 +1,27 @@
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page contentType="text/html" pageEncoding="UTF-8" %>
+<c:set var="pageTitle" value="Account Created" scope="request" />
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>New User Added</title>
-    <!-- Include Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<%@ include file="fragments/head.jspf" %>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header text-center bg-primary text-white">
-                        <h2>New User Added</h2>
-                    </div>
-                    <div class="card-footer text-center">
-                        <a href="/login" class="btn btn-secondary">Back To Login</a>
+    <div class="auth-wrapper">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card text-center">
+                        <div class="card-body p-5">
+                            <div class="display-3 text-success mb-2">&#10003;</div>
+                            <h1 class="h4 page-title mb-2">Account created</h1>
+                            <p class="text-muted mb-4">Your account is ready. You can now sign in.</p>
+                            <a href="/login" class="btn btn-primary px-4">Back to Login</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Include Bootstrap JS (Optional, for interactivity) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
