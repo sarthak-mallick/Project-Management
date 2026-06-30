@@ -1,7 +1,5 @@
 <%@taglib prefix="c" uri="jakarta.tags.core"  %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
-<%@page import="com.projectManagement.models.Project"%>
-<%@page import="java.util.List"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
