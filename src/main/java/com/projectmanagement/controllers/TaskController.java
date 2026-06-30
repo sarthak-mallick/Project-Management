@@ -113,6 +113,9 @@ public class TaskController {
 			HttpServletRequest request, ModelMap modelMap, SessionStatus status) {
     	
 		Task taskInDb = taskDao.getTaskById(task.getId());
+		if (taskInDb == null || taskInDb.getProject() == null) {
+			return "redirect:/all-projects";
+		}
 		Project project = taskInDb.getProject();
 		int projectId = project.getId();
 		try {
