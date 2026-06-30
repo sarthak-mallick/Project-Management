@@ -39,7 +39,8 @@ public class ProjectController {
 		
 		int userId = (int) request.getSession().getAttribute("userId");
 		Project project = projectDao.getProjectById(projectId);
-		projectDao.deleteProject(project, userId);
+		if (project != null)
+			projectDao.deleteProject(project, userId);
 		status.setComplete();
 		return "redirect:/all-projects";
 	}
