@@ -1,31 +1,27 @@
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page contentType="text/html" pageEncoding="UTF-8" %>
+<c:set var="pageTitle" value="Logged Out" scope="request" />
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Logged out</title>
-    <!-- Include Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<%@ include file="fragments/head.jspf" %>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header text-center bg-primary text-white">
-                        <h2>Logged out</h2>
-                    </div>
-                    <div class="card-footer text-center">
-                        <a href="/login" class="btn btn-secondary">Go To Login</a>
+    <div class="auth-wrapper">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card text-center">
+                        <div class="card-body p-5">
+                            <div class="display-3 mb-2">&#128075;</div>
+                            <h1 class="h4 page-title mb-2">Signed out</h1>
+                            <p class="text-muted mb-4">You have been logged out successfully.</p>
+                            <a href="/login" class="btn btn-primary px-4">Sign in again</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Include Bootstrap JS (Optional, for interactivity) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
