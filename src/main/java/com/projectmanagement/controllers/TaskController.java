@@ -52,7 +52,8 @@ public class TaskController {
 	@PostMapping("/new-task")
 	public String handleForm(@ModelAttribute("task") Task task, @RequestParam("id") int projectId, BindingResult bindingResult, User assignee,
 			SessionStatus status, TaskDao taskDao, ProjectDao projectDao, UserDao userDao, HttpServletRequest request, ModelMap modelMap) {
-		
+
+		modelMap.addAttribute("projectId", projectId);
 		taskValidator.validate(task, bindingResult);
         if(bindingResult.hasErrors()){
             return "new-task";
