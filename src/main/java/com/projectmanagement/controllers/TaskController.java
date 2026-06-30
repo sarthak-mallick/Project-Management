@@ -35,12 +35,12 @@ public class TaskController {
 	TaskValidator taskValidator;
 	
 	@GetMapping("/all-tasks")
-	public String allTasks(@RequestParam("id") int projectId, ProjectDao projectDao, UserDao userDao, 
-			HttpServletRequest request, ModelMap modelMap, Task task) {
-		
-		addModelsToAllProjects(projectDao, userDao, modelMap, projectId, task);
+	public String allTasks(@RequestParam("id") int projectId, ProjectDao projectDao, UserDao userDao,
+			HttpServletRequest request, ModelMap modelMap) {
+
+		addModelsToAllProjects(projectDao, userDao, modelMap, projectId);
         return "all-tasks";
-	}	
+	}
 	
 	@GetMapping("/new-task")
 	public String showForm(ModelMap modelMap, Task task, @RequestParam("id") int projectId) {
@@ -59,7 +59,6 @@ public class TaskController {
             return "new-task";
         }
 		try {
-			int userId = (int) request.getSession().getAttribute("userId");
 			Project project = projectDao.getProjectById(projectId);
 			taskDao.addTaskForProject(project, task, projectDao);
 			status.setComplete();
@@ -74,7 +73,6 @@ public class TaskController {
 	public String deleteTask(@RequestParam("id") int taskId, @RequestParam("projectId") int projectId, SessionStatus status,
 			TaskDao taskDao, ProjectDao projectDao, UserDao userDao, ModelMap modelMap, HttpServletRequest request) {
 		
-		int userId = (int) request.getSession().getAttribute("userId");
 		Project project = projectDao.getProjectById(projectId);
 		Task task = taskDao.getTaskById(taskId);
 		try {
@@ -114,7 +112,6 @@ public class TaskController {
 	public String editTaskForm(@ModelAttribute Task task, TaskDao taskDao, UserDao userDao, ProjectDao projectDao,
 			HttpServletRequest request, ModelMap modelMap, SessionStatus status) {
     	
-		int userId = (int) request.getSession().getAttribute("userId");
 		Task taskInDb = taskDao.getTaskById(task.getId());
 		Project project = taskInDb.getProject();
 		int projectId = project.getId();
@@ -127,12 +124,11 @@ public class TaskController {
         return "redirect:/all-tasks?id="+projectId;
 	}
 	
-	private void addModelsToAllProjects(ProjectDao projectDao, UserDao userDao, ModelMap modelMap, int projectId, Task task) {
+	private void addModelsToAllProjects(ProjectDao projectDao, UserDao userDao, ModelMap modelMap, int projectId) {
 		List<Task> tasks = projectDao.getAllTasksByProjectId(projectId);
         modelMap.addAttribute("taskList", tasks);
         modelMap.addAttribute("projectId", projectId);
-		modelMap.addAttribute("task", task);
-		
+
 		List<User> userList = userDao.getAllUsers();
 		Map<Integer, List<User>> userMapForTask = new HashMap<>();
 		for(Task t : tasks) {
