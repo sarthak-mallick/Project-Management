@@ -47,9 +47,12 @@ public class TaskDao extends Dao<Task> {
     public ArrayList<String> addTaskForUser(int taskId, int userId, UserDao userDao) {
         Task task = getTaskById(taskId);
         User user = userDao.getUserById(userId);
+        if (task == null || user == null) {
+            return null;
+        }
         user.addTask(task);
         userDao.updateUser(user);
-        
+
         ArrayList<String> taskAndUser = new ArrayList<>();
         taskAndUser.add(task.getName());
         taskAndUser.add(user.getName());

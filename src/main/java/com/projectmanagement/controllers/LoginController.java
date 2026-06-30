@@ -12,6 +12,7 @@ import com.projectmanagement.dao.UserDao;
 import com.projectmanagement.models.User;
 import com.projectmanagement.validator.NewUserValidator;
 import com.projectmanagement.validator.UserValidator;
+import com.projectmanagement.util.PasswordUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -40,6 +41,7 @@ public class LoginController {
         if(bindingResult.hasErrors()){
             return "new-user";
         }
+		user.setPassword(PasswordUtil.hash(user.getPassword()));
 		userDao.saveUser(user);
 		return "redirect:/user-added";
 	}

@@ -65,8 +65,7 @@ public class TaskController {
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-		addModelsToAllProjects(projectDao, userDao, modelMap, projectId, task);
-        return "redirect:/all-tasks?id="+projectId;	
+        return "redirect:/all-tasks?id="+projectId;
     }
 
 
@@ -83,16 +82,20 @@ public class TaskController {
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-		addModelsToAllProjects(projectDao, userDao, modelMap, projectId, task);
-        return "redirect:/all-tasks?id="+projectId;	
+        return "redirect:/all-tasks?id="+projectId;
     }
-	
+
     @PostMapping("/updateTaskAssignee")
     @ResponseBody
     public void updateTaskAssignee(@RequestParam int taskId, @RequestParam int userId, TaskDao taskDao, UserDao userDao,
     		HttpServletResponse response) throws IOException {        
         
     	ArrayList<String> taskAndUser = taskDao.addTaskForUser(taskId, userId, userDao);
+        if (taskAndUser == null) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("Unknown task or user");
+            return;
+        }
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().write("Task "+taskAndUser.get(0)+" is now assigned to "+taskAndUser.get(1));
     }
@@ -120,7 +123,6 @@ public class TaskController {
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-		addModelsToAllProjects(projectDao, userDao, modelMap, projectId, task);
         return "redirect:/all-tasks?id="+projectId;
 	}
 	

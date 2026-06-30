@@ -22,7 +22,7 @@ public abstract class Dao<T> {
     public static Session getSession(){
         Session session = (Session) Dao.sessionThread.get();
 
-        if(session == null){
+        if(session == null || !session.isOpen()){
             session = sessionFactory.openSession();
             sessionThread.set(session);
         }
@@ -46,7 +46,13 @@ public abstract class Dao<T> {
     }
 
     public static void close(){
-        getSession().close();
+        Session session = (Session) Dao.sessionThread.get();
+        if (session != null) {
+            if (session.isOpen()) {
+                session.close();
+            }
+            sessionThread.remove();
+        }
     }
     
     public void saveObject(T object){
