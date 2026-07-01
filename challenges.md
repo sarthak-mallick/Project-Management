@@ -132,6 +132,88 @@ truncate the `users` table). There is no automatic migration.
 
 ---
 
+## 7. Responsive layout broken — missing viewport meta tag
+
+**Severity:** Medium (UI)
+
+**Files:** all JSP views (now centralized in
+`src/main/webapp/WEB-INF/views/fragments/head.jspf`)
+
+**Problem:** None of the pages declared
+`<meta name="viewport" content="width=device-width, initial-scale=1">`, so the
+Bootstrap responsive grid never engaged on mobile — pages rendered zoomed-out at
+desktop width.
+
+**Fix:** As part of a full UI redesign (Bootstrap 4.5 → 5.3, shared `head.jspf` /
+`navbar.jspf` fragments to remove per-page duplication, card-based layouts,
+empty states, and a vanilla-`fetch` assignee update replacing jQuery), the
+viewport tag is now emitted on every page through the shared head fragment.
+
+---
+
+## 8. Editing a task threw a NullPointerException (missing task id)
+
+**Severity:** High
+
+**File:** `src/main/webapp/WEB-INF/views/edit-task.jsp`
+
+**Problem:** The edit-task form never rendered the task id, so the POST bound a
+`Task` with `id = 0`. `editTaskForm` then called `getTaskById(0)`, got `null`,
+and threw an NPE on `taskInDb.getProject()` (HTTP 500). Editing any task failed.
+
+**Fix:** Added `<form:hidden path="id"/>` so the id is submitted; the existing
+controller already reads `task.getId()`, so no backend change was needed.
+
+---
+
+## 9. new-task validation errors dropped the project context
+
+**Severity:** Medium
+
+**File:** `src/main/java/com/projectmanagement/controllers/TaskController.java`
+
+**Problem:** The redesigned new-task page builds its form action and back/cancel
+links from `${projectId}`. The `POST /new-task` handler only placed `projectId`
+in the model on the success path; on a validation error it returned the
+`new-task` view without it, so the re-rendered links lost the id and a resubmit
+would 400.
+
+**Fix:** Add `projectId` to the model at the top of the handler so the
+re-rendered form stays bound to the right project. Also removed now-dead code
+in the same controller: the `task` model attribute (the redesigned list page no
+longer binds a task form object) and three unused `userId` locals.
+
+---
+
+## 10. Editing a stale task 500'd; PRG / navigation audit
+
+**Severity:** Medium
+
+**File:** `src/main/java/com/projectmanagement/controllers/TaskController.java`
+
+**Problem:** `editTaskForm` dereferenced `getTaskById(task.getId())` before its
+`try` block with no null check. Submitting a stale edit form — the task was
+deleted in the meantime, a browser back/forward replayed the POST, or the id was
+tampered — produced an uncaught NullPointerException (HTTP 500).
+
+**Fix:** Guard for a missing task or project and fall back to
+`redirect:/all-projects` so navigation never breaks.
+
+**Audit context:** This came out of a review of the Post-Redirect-Get pattern
+and refresh/back/forward behavior. Findings:
+
+- Every state-changing POST already redirects on success (`/new-user`,
+  `/login`, `/new-project`, `/new-task`, `/edit-task`), so refreshing or
+  navigating onto a result page re-runs an idempotent GET. PRG is correct.
+- Validation errors intentionally forward (return the view) rather than
+  redirect, so refreshing a page that just showed field errors prompts the
+  browser's "resubmit form?" dialog. Conventional trade-off; left as-is.
+- Deletes use GET links but are safe to replay: `delete-project` is protected
+  by its null guard and `delete-task` by its try/catch, so a back-button replay
+  is a no-op redirect rather than a duplicate delete or a 500.
+
+---
+
 ## Verification status
 
 The fixes were validated through the IDE language server (no compile errors; the
