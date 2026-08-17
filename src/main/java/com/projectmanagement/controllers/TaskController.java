@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.projectmanagement.dao.ProjectDao;
 import com.projectmanagement.dao.TaskDao;
@@ -23,6 +24,7 @@ import com.projectmanagement.dao.UserDao;
 import com.projectmanagement.models.Project;
 import com.projectmanagement.models.Task;
 import com.projectmanagement.models.User;
+import com.projectmanagement.util.FormFlash;
 import com.projectmanagement.validator.TaskValidator;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +35,7 @@ public class TaskController {
 	
 	@Autowired
 	TaskValidator taskValidator;
-	
+
 	@GetMapping("/all-tasks")
 	public String allTasks(@RequestParam("id") int projectId, ProjectDao projectDao, UserDao userDao,
 			HttpServletRequest request, ModelMap modelMap) {
@@ -43,20 +45,23 @@ public class TaskController {
 	}
 	
 	@GetMapping("/new-task")
-	public String showForm(ModelMap modelMap, Task task, @RequestParam("id") int projectId) {
-		modelMap.addAttribute("task", task);
+	public String showForm(ModelMap modelMap, @RequestParam("id") int projectId) {
+		if (!modelMap.containsAttribute("task")) {
+			modelMap.addAttribute("task", new Task());
+		}
 		modelMap.addAttribute("projectId", projectId);
 		return "new-task";
 	}
-	
-	@PostMapping("/new-task")
-	public String handleForm(@ModelAttribute("task") Task task, @RequestParam("id") int projectId, BindingResult bindingResult, User assignee,
-			SessionStatus status, TaskDao taskDao, ProjectDao projectDao, UserDao userDao, HttpServletRequest request, ModelMap modelMap) {
 
-		modelMap.addAttribute("projectId", projectId);
+	@PostMapping("/new-task")
+	public String handleForm(@ModelAttribute("task") Task task, BindingResult bindingResult, @RequestParam("id") int projectId,
+			SessionStatus status, TaskDao taskDao, ProjectDao projectDao, UserDao userDao, HttpServletRequest request,
+			RedirectAttributes redirectAttributes) {
+
 		taskValidator.validate(task, bindingResult);
         if(bindingResult.hasErrors()){
-            return "new-task";
+			FormFlash.flashErrors(redirectAttributes, "task", task, bindingResult);
+			return "redirect:/new-task?id="+projectId;
         }
 		try {
 			Project project = projectDao.getProjectById(projectId);
@@ -106,12 +111,12 @@ public class TaskController {
         modelMap.addAttribute("task", task);
         modelMap.addAttribute("projectId", projectId);
         return "edit-task";
-	}	
-	
+	}
+
 	@PostMapping("/edit-task")
 	public String editTaskForm(@ModelAttribute Task task, TaskDao taskDao, UserDao userDao, ProjectDao projectDao,
 			HttpServletRequest request, ModelMap modelMap, SessionStatus status) {
-    	
+
 		Task taskInDb = taskDao.getTaskById(task.getId());
 		if (taskInDb == null || taskInDb.getProject() == null) {
 			return "redirect:/all-projects";
