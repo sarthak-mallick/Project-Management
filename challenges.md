@@ -211,7 +211,9 @@ and refresh/back/forward behavior. Findings:
   time — since fixed in item 11 below.
 - Deletes use GET links but are safe to replay: `delete-project` is protected
   by its null guard and `delete-task` by its try/catch, so a back-button replay
-  is a no-op redirect rather than a duplicate delete or a 500.
+  is a no-op redirect rather than a duplicate delete or a 500. (Replay safety
+  was the only thing checked here; the wider problem with delete-by-GET is
+  item 13.)
 
 ---
 
@@ -263,9 +265,10 @@ redirect in flash attributes:
 password field comes back empty and must be retyped. The other fields keep their
 submitted values, as before.
 
-**Left as-is:** deletes are still `GET` links (`delete-task`, `delete-project`).
-They are idempotent and guarded, so a replay is a no-op redirect, but they remain
-non-conforming to the "state change only via POST" half of the pattern.
+**Left as-is at the time:** deletes are still `GET` links (`delete-task`,
+`delete-project`). They are idempotent and guarded, so a replay is a no-op
+redirect, but they remain non-conforming to the "state change only via POST" half
+of the pattern — since fixed in item 13 below.
 
 ---
 
@@ -324,6 +327,55 @@ object would reject the (never-submitted) name on every request, and
 
 ---
 
+## 13. Deletes were GET links, so following a link could destroy data
+
+**Severity:** High (security)
+
+**Files:** `src/main/java/com/projectmanagement/controllers/ProjectController.java`,
+`src/main/java/com/projectmanagement/controllers/TaskController.java`,
+`src/main/webapp/WEB-INF/views/all-projects.jsp`,
+`src/main/webapp/WEB-INF/views/all-tasks.jsp`
+
+**Problem:** `delete-project` and `delete-task` were `@GetMapping` handlers
+reached through plain `<a href>` links. GET is defined as a safe method, so
+anything that follows a URL is entitled to issue one:
+
+- A logged-in user clicking a link from anywhere — email, chat, a forum post —
+  pointing at `…/delete-project?id=5` deleted that project. This is the vector
+  that survives modern cookie defaults: `SameSite=Lax` (the Chromium default; no
+  cookie policy is configured here) blocks cross-site *subresource* GETs such as
+  `<img src=…>`, but by design still sends the session cookie on top-level
+  navigations.
+- Link prefetchers, crawlers, browser extensions and security scanners fetch URLs
+  they find in a page; same-origin requests carry the session cookie.
+- Back/forward history replays the request.
+
+The `onclick="return confirm(...)"` on both links gated a human click, not a
+request. What limited the damage was incidental rather than by design: the null
+guard on `delete-project` and the try/catch on `delete-task` make a *replayed*
+delete a no-op redirect, but aimed at a row that still exists, all of the above
+delete it.
+
+**Fix:** Both handlers are now `@PostMapping`, and both links became inline
+`method="post"` forms carrying the ids as hidden inputs, with the confirm moved
+from `onclick` to `onsubmit`. Neither list page has an enclosing `<form>`, so
+nesting is not an issue. The handlers already redirected after deleting, so
+post-delete behavior is unchanged and the redirect keeps them refresh-safe.
+
+**Still missing:** there is no CSRF token, so a hostile page can still auto-submit
+a cross-site POST. `SameSite=Lax` blocks that in Chromium, but a token is the
+real defense; this app has no Spring Security filter chain to inherit one from,
+so it would have to be hand-rolled (session-stored token rendered into every
+form and checked in an interceptor).
+
+**Related, left as-is:** `/logout` is also a `@GetMapping` that changes state
+(`session.invalidate()`), reached from a `<a href="/logout">` in `navbar.jspf`, so
+a prefetcher or a crafted link can sign a user out. The impact is an annoyance
+rather than data loss, and converting it means turning the navbar link into a
+form or button, so it was left out of this change.
+
+---
+
 ## Verification status
 
 Items 1–10 were validated through the IDE language server (no compile errors; the
@@ -343,11 +395,17 @@ new handlers, because the real ones take DAO parameters whose static
 `SessionFactory` needs a live MySQL; they were scratch files and are not part of
 the checkout.
 
+Item 13 was checked by recompiling and re-running those suites (unaffected, all
+passing), by confirming the two delete routes are the only state-changing
+handlers left outside `@PostMapping` apart from `/logout`, that no `href="delete…"`
+links remain, and that the new forms are balanced and unnested.
+
 A full `mvn package` was **not** run in this environment — there is no system
 Maven and the `.mvn` wrapper directory is absent from the checkout. Neither was
-the app exercised end-to-end against MySQL, so the JSP changes in items 11–12
-(the new `<form:errors>` slots) are unrendered; a real build and a manual pass
-over the four forms are recommended.
+the app exercised end-to-end against MySQL, so the JSP changes in items 11–13
+(the new `<form:errors>` slots and the two delete forms) are unrendered; a real
+build and a manual pass over the four forms and both delete buttons are
+recommended.
 
 ## Pre-existing issues left untouched (out of scope)
 

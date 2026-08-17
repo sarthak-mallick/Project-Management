@@ -47,7 +47,9 @@ Controllers use `@ModelAttribute` form binding plus a manual `validator/*` call 
 `BindingResult`. The shared `CommonValidator.regexValidate` is the building block for field
 validators.
 
-**Post-Redirect-Get:** every POST redirects — including validation failures, which flash the
+**Post-Redirect-Get:** state changes go through POST — deletes included, via inline `method="post"`
+forms in the list pages — so GET handlers stay side-effect-free. Every POST redirects — including
+validation failures, which flash the
 bound object and its `BindingResult` via `util/FormFlash` and redirect back to the form's GET.
 For that to work, a form's GET handler must **not** declare a model-attribute parameter (it would
 rebind the empty GET request and wipe the flashed errors); instead it seeds an empty object only
