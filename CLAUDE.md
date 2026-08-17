@@ -44,8 +44,15 @@ use Spring Data JPA or Spring-managed transactions:**
 
 **Request flow:** `controllers/*` (`@Controller`, returning JSP view names) → DAO → Hibernate.
 Controllers use `@ModelAttribute` form binding plus a manual `validator/*` call against a
-`BindingResult`; on errors they re-render the same JSP. The shared `CommonValidator.regexValidate`
-is the building block for field validators.
+`BindingResult`. The shared `CommonValidator.regexValidate` is the building block for field
+validators.
+
+**Post-Redirect-Get:** every POST redirects — including validation failures, which flash the
+bound object and its `BindingResult` via `util/FormFlash` and redirect back to the form's GET.
+For that to work, a form's GET handler must **not** declare a model-attribute parameter (it would
+rebind the empty GET request and wipe the flashed errors); instead it seeds an empty object only
+when absent: `if (!modelMap.containsAttribute("task")) modelMap.addAttribute("task", new Task());`
+Follow this pattern for any new form.
 
 **Authentication & sessions:** login (`LoginController`) authenticates against the DB and stores
 `userId` in the `HttpSession`. `interceptor/SessionInterceptor` (registered in `config/WebConfig`)
@@ -62,3 +69,7 @@ JPA-annotated (`@Entity`/`@Table`); note passwords are currently stored and comp
   SessionFactory is built only from that file, not from classpath scanning).
 - New controller routes that require login need no extra wiring; routes that must be public must be
   added to `WebConfig`'s exclude list.
+- Field validators pass their message inline (`errors.rejectValue(field, code, message)`). Only
+  binding-failure text is externalized, in `src/main/resources/messages.properties` under
+  `typeMismatch...` keys; a POST handler needs a `BindingResult` parameter for those failures to
+  become field errors instead of a `BindException` (HTTP 400).

@@ -207,20 +207,147 @@ and refresh/back/forward behavior. Findings:
   navigating onto a result page re-runs an idempotent GET. PRG is correct.
 - Validation errors intentionally forward (return the view) rather than
   redirect, so refreshing a page that just showed field errors prompts the
-  browser's "resubmit form?" dialog. Conventional trade-off; left as-is.
+  browser's "resubmit form?" dialog. Conventional trade-off; left as-is at the
+  time — since fixed in item 11 below.
 - Deletes use GET links but are safe to replay: `delete-project` is protected
   by its null guard and `delete-task` by its try/catch, so a back-button replay
   is a no-op redirect rather than a duplicate delete or a 500.
 
 ---
 
+## 11. Validation errors broke Post-Redirect-Get (resubmit-on-refresh)
+
+**Severity:** Medium
+
+**Files:** `src/main/java/com/projectmanagement/util/FormFlash.java` (new),
+`src/main/java/com/projectmanagement/controllers/LoginController.java`,
+`src/main/java/com/projectmanagement/controllers/ProjectController.java`,
+`src/main/java/com/projectmanagement/controllers/TaskController.java`
+
+**Problem:** PRG was only half-applied. Success paths redirected, but all four
+validation-error paths (`/new-user`, `/login`, `/new-project`, `/new-task`)
+returned the view name directly, so the error page was rendered *as the response
+to the POST*. The browser's URL stayed on the POST, which meant refreshing —
+or navigating back onto — a page that had just shown field errors re-triggered
+the "Confirm form resubmission" dialog and replayed the POST. On `/new-project`
+and `/new-task` that replay is a real write: correct the field, submit, go back,
+refresh, and the row is created twice.
+
+`POST /login` had a second variant of the same problem: a wrong password
+redirected to `/login` with no error attached at all, so the user was silently
+bounced back to an empty form with no idea why.
+
+**Fix:** Every error path now redirects, carrying the rejected form across the
+redirect in flash attributes:
+
+- Added `FormFlash.flashErrors(...)`, which flashes both the bound object and its
+  `BindingResult` (under `BindingResult.MODEL_KEY_PREFIX + name`, the key the
+  `<form:...>` tags look up).
+- The four GET form handlers dropped their model-attribute parameter and now seed
+  an empty object only when the model does not already hold one
+  (`if (!modelMap.containsAttribute("project"))`). This is the crux: Spring's
+  `RequestMappingHandlerAdapter` merges the input flash map into the
+  `ModelAndViewContainer` *before* the handler runs, so on the redirect the
+  flashed object and errors are already in the model — but a
+  `@ModelAttribute`-typed parameter would rebind the (parameter-less) GET request
+  and overwrite the flashed `BindingResult` with an empty one, silently dropping
+  every error message. Without the parameter, nothing overwrites them.
+- `POST /login` now rejects the `password` field with "Invalid email or password"
+  on a failed authentication, so the redirect target explains itself.
+- Both password-bearing forms null the password on the object before flashing.
+  `rejectValue` snapshots the current field value as the error's rejected value,
+  hence the clear happens *before* the reject — this keeps the plaintext password
+  out of the session-backed flash map and out of the re-rendered input.
+
+**Behavior change:** after a validation error on the signup or login form, the
+password field comes back empty and must be retyped. The other fields keep their
+submitted values, as before.
+
+**Left as-is:** deletes are still `GET` links (`delete-task`, `delete-project`).
+They are idempotent and guarded, so a replay is a no-op redirect, but they remain
+non-conforming to the "state change only via POST" half of the pattern.
+
+---
+
+## 12. Edit-task accepted any effort value and 400'd on a non-numeric one
+
+**Severity:** Medium
+
+**Files:** `src/main/java/com/projectmanagement/validator/TaskEditValidator.java`
+(new), `src/main/resources/messages.properties` (new),
+`src/main/java/com/projectmanagement/controllers/TaskController.java`,
+`src/main/webapp/WEB-INF/views/edit-task.jsp`
+
+**Problem:** `POST /edit-task` was the only form handler with no validation and
+no `BindingResult` parameter at all. Two consequences:
+
+- `min="0"` on the effort inputs is client-side only, so a crafted or
+  devtools-edited request stored negative effort. `Task.getPercentComplete()`
+  then returned a negative percentage, which the task list renders as a progress
+  bar.
+- With no `BindingResult` parameter declared, a value that cannot bind to the
+  `double` fields (a non-numeric string, or a cleared input) made Spring throw
+  `BindException` instead of recording a field error — an empty HTTP 400 with no
+  message. Clearing an effort box and saving was enough to trigger it.
+
+**Note on scope:** `TaskValidator` is *not* the right validator here. The edit
+form submits only `id`, `effortEstimate` and `effortLogged`, and
+`TaskDao.saveTaskEdit` copies only the two effort fields — the name is neither
+editable nor persisted on this form. Running `TaskValidator` against the bound
+object would reject the (never-submitted) name on every request, and
+`CommonValidator.regexValidate` would then throw an NPE on
+`Pattern.matcher(null)`.
+
+**Fix:**
+- Added `TaskEditValidator`, which rejects negative effort values. It skips a
+  field that already carries an error, since a field that failed conversion binds
+  as `0.0` and would otherwise collect a second, misleading message.
+- `POST /edit-task` now takes a `BindingResult` (so conversion failures become
+  field errors rather than a `BindException`), validates, and on errors flashes
+  the form via `FormFlash` and redirects back to
+  `/edit-task?id=…&projectId=…` — the same PRG path as item 11. The name is
+  copied from the stored row before flashing so the page heading survives the
+  re-render.
+- `GET /edit-task` picks up the item 11 pattern: seed from the DB only when the
+  model has no flashed task, and redirect to `/all-projects` when the id matches
+  no row (the GET counterpart of the null guard item 10 added to the POST).
+- `edit-task.jsp` gained `<form:errors>` slots for both fields, and the redundant
+  `value="${task.effortEstimate}"` / `value="${task.effortLogged}"` attributes
+  were removed: `path` already renders the bound value, and the hardcoded
+  attribute (written before the tag's own `value`, so the browser honours it)
+  would have shown the stored value instead of what the user typed.
+- Added `messages.properties` so binding failures read "Effort estimate must be a
+  number" rather than Spring's default `typeMismatch` text, which names Java
+  types. Spring Boot auto-configures a `MessageSource` from this default
+  `messages` basename; validators that pass a message inline are unaffected,
+  since an unresolvable code falls back to that message.
+
+---
+
 ## Verification status
 
-The fixes were validated through the IDE language server (no compile errors; the
-new BCrypt imports resolve). A full `mvn package` was **not** run in this
-environment — there is no system Maven and the `.mvn` wrapper directory is absent
-from the checkout. A real build (which needs network access the first time to
-download `spring-security-crypto`) is recommended to confirm end-to-end.
+Items 1–10 were validated through the IDE language server (no compile errors; the
+new BCrypt imports resolve).
+
+Items 11–12 were additionally checked by compiling every file under
+`src/main/java` with `javac` against the jars already in `~/.m2` (clean, apart
+from the pre-existing raw-`ThreadLocal` and redundant-cast warnings), and by
+running MockMvc round trips — invalid POST, then the follow-up GET with the
+resulting flash map — that assert the redirect status and target, that the
+`BindingResult` and the rejected field values survive into the GET model, that a
+clean GET still renders a blank form, that a wrong password comes back as a
+message with the password input empty and the plaintext absent from the flash
+map, that a non-numeric effort redirects instead of returning 400, and that a
+valid edit is still written. Those checks ran against controllers mirroring the
+new handlers, because the real ones take DAO parameters whose static
+`SessionFactory` needs a live MySQL; they were scratch files and are not part of
+the checkout.
+
+A full `mvn package` was **not** run in this environment — there is no system
+Maven and the `.mvn` wrapper directory is absent from the checkout. Neither was
+the app exercised end-to-end against MySQL, so the JSP changes in items 11–12
+(the new `<form:errors>` slots) are unrendered; a real build and a manual pass
+over the four forms are recommended.
 
 ## Pre-existing issues left untouched (out of scope)
 
