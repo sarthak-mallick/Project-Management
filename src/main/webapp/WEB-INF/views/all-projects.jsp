@@ -45,8 +45,11 @@
                                             <td class="text-end pe-4">
                                                 <c:choose>
                                                     <c:when test="${sessionScope.userId == project.projectManagerId}">
-                                                        <a href="delete-project?id=${project.id}" class="btn btn-sm btn-outline-danger"
-                                                           onclick="return confirm('Delete this project and all its tasks?');">Delete</a>
+                                                        <form action="delete-project" method="post" class="d-inline"
+                                                              onsubmit="return confirm('Delete this project and all its tasks?');">
+                                                            <input type="hidden" name="id" value="${project.id}" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                        </form>
                                                     </c:when>
                                                     <c:otherwise>
                                                         <span class="badge badge-restricted">Restricted</span>
