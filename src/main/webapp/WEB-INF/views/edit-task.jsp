@@ -21,11 +21,13 @@
                             <form:hidden path="id" />
                             <div class="mb-3">
                                 <label for="effortEstimate" class="form-label">Effort Estimate (hours)</label>
-                                <form:input value="${task.effortEstimate}" path="effortEstimate" id="effortEstimate" type="number" step="0.5" min="0" class="form-control" placeholder="e.g. 8" />
+                                <form:input path="effortEstimate" id="effortEstimate" type="number" step="0.5" min="0" class="form-control" placeholder="e.g. 8" />
+                                <div class="text-danger small mt-1"><form:errors path="effortEstimate" /></div>
                             </div>
                             <div class="mb-3">
                                 <label for="effortLogged" class="form-label">Logged Effort (hours)</label>
-                                <form:input value="${task.effortLogged}" path="effortLogged" id="effortLogged" type="number" step="0.5" min="0" class="form-control" placeholder="e.g. 4" />
+                                <form:input path="effortLogged" id="effortLogged" type="number" step="0.5" min="0" class="form-control" placeholder="e.g. 4" />
+                                <div class="text-danger small mt-1"><form:errors path="effortLogged" /></div>
                             </div>
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">Save Changes</button>

@@ -25,6 +25,7 @@ import com.projectmanagement.models.Project;
 import com.projectmanagement.models.Task;
 import com.projectmanagement.models.User;
 import com.projectmanagement.util.FormFlash;
+import com.projectmanagement.validator.TaskEditValidator;
 import com.projectmanagement.validator.TaskValidator;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,6 +36,9 @@ public class TaskController {
 	
 	@Autowired
 	TaskValidator taskValidator;
+
+	@Autowired
+	TaskEditValidator taskEditValidator;
 
 	@GetMapping("/all-tasks")
 	public String allTasks(@RequestParam("id") int projectId, ProjectDao projectDao, UserDao userDao,
@@ -107,15 +111,21 @@ public class TaskController {
 	@GetMapping("/edit-task")
 	public String showTaskForm(@RequestParam("id") int taskId, @RequestParam("projectId") int projectId, TaskDao taskDao,
 			HttpServletRequest request, ModelMap modelMap) {
-		Task task = taskDao.getTaskById(taskId);
-        modelMap.addAttribute("task", task);
+		if (!modelMap.containsAttribute("task")) {
+			Task task = taskDao.getTaskById(taskId);
+			if (task == null) {
+				return "redirect:/all-projects";
+			}
+			modelMap.addAttribute("task", task);
+		}
         modelMap.addAttribute("projectId", projectId);
         return "edit-task";
 	}
 
 	@PostMapping("/edit-task")
-	public String editTaskForm(@ModelAttribute Task task, TaskDao taskDao, UserDao userDao, ProjectDao projectDao,
-			HttpServletRequest request, ModelMap modelMap, SessionStatus status) {
+	public String editTaskForm(@ModelAttribute Task task, BindingResult bindingResult, TaskDao taskDao, UserDao userDao,
+			ProjectDao projectDao, HttpServletRequest request, SessionStatus status,
+			RedirectAttributes redirectAttributes) {
 
 		Task taskInDb = taskDao.getTaskById(task.getId());
 		if (taskInDb == null || taskInDb.getProject() == null) {
@@ -123,6 +133,15 @@ public class TaskController {
 		}
 		Project project = taskInDb.getProject();
 		int projectId = project.getId();
+
+		taskEditValidator.validate(task, bindingResult);
+		if (bindingResult.hasErrors()) {
+			// The form does not submit the name, so carry it over from the stored task
+			// to keep the heading intact on the re-rendered form.
+			task.setName(taskInDb.getName());
+			FormFlash.flashErrors(redirectAttributes, "task", task, bindingResult);
+			return "redirect:/edit-task?id="+task.getId()+"&projectId="+projectId;
+		}
 		try {
 			taskDao.saveTaskEdit(task, taskInDb, project, projectDao);
 			status.setComplete();
