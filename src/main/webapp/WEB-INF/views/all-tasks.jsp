@@ -67,8 +67,12 @@
                                             </td>
                                             <td class="text-end pe-4">
                                                 <a href="edit-task?id=${task.id}&projectId=${requestScope.projectId}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                                <a href="delete-task?id=${task.id}&projectId=${requestScope.projectId}" class="btn btn-sm btn-outline-danger"
-                                                   onclick="return confirm('Delete this task?');">Delete</a>
+                                                <form action="delete-task" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Delete this task?');">
+                                                    <input type="hidden" name="id" value="${task.id}" />
+                                                    <input type="hidden" name="projectId" value="${requestScope.projectId}" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
                                             </td>
                                         </tr>
                                     </c:forEach>

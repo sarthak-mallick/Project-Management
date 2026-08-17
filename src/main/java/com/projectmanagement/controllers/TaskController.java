@@ -78,7 +78,7 @@ public class TaskController {
     }
 
 
-	@GetMapping("delete-task")
+	@PostMapping("delete-task")
 	public String deleteTask(@RequestParam("id") int taskId, @RequestParam("projectId") int projectId, SessionStatus status,
 			TaskDao taskDao, ProjectDao projectDao, UserDao userDao, ModelMap modelMap, HttpServletRequest request) {
 		

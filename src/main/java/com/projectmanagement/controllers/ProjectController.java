@@ -35,7 +35,7 @@ public class ProjectController {
 		return new ModelAndView("all-projects", "projectList", projectDao.getAllProjectsByUserId(userId));
 	}
 	
-	@GetMapping("delete-project")
+	@PostMapping("delete-project")
 	public String deleteProject(@RequestParam("id") int projectId, SessionStatus status, ProjectDao projectDao,
 			ModelMap modelMap, HttpServletRequest request) {
 		
